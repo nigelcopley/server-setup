@@ -13,7 +13,38 @@ if [[ ! -f $CONFIG_FILE ]]; then
   echo "Error: Configuration file $CONFIG_FILE not found!"
   exit 1
 fi
-source $CONFIG_FILE # This file should define variables: domains, NEW_USER, USER_PASSWORD, HOSTNAME, INSTALL_REDIS, SSL_EMAIL, INSTALL_FAIL2BAN, INSTALL_CLAMAV, ENABLE_BACKUPS, USE_DO_SPACES, DO_SPACES_ACCESS_KEY, DO_SPACES_SECRET_KEY, DO_SPACES_BUCKET_NAME, DO_SPACES_REGION, ENABLE_EMAIL_NOTIFICATIONS
+source $CONFIG_FILE
+
+# Define credentials output file
+CREDENTIALS_FILE="credentials.txt"
+echo "Credentials for Created Users and Databases" > $CREDENTIALS_FILE
+echo "------------------------------------------" >> $CREDENTIALS_FILE
+
+# Function to create a new system user
+create_user() {
+  local user=$1
+  local password=$2
+  
+  if id "$user" &>/dev/null; then
+    echo "User $user already exists. Skipping user creation."
+  else
+    echo "Creating user $user..."
+    sudo adduser --disabled-password --gecos "" $user
+    echo "$user:$password" | sudo chpasswd
+    echo "User $user created with password: $password" >> $CREDENTIALS_FILE
+  fi
+}
+
+# Function to generate random password
+generate_password() {
+  openssl rand -base64 16
+}
+
+# Function to extract domain information
+extract_domain_info() {
+  local domain_entry=$1
+  echo $domain_entry | cut -d':' -f$2
+}
 
 # Update and Upgrade the System
 sudo apt-get update -y && sudo apt-get upgrade -y
@@ -55,19 +86,8 @@ if [[ "$INSTALL_REDIS" == "true" ]]; then
 fi
 
 # Create a New User and Set Password
-if id "$NEW_USER" &>/dev/null; then
-  echo "User $NEW_USER already exists. Skipping user creation."
-else
-  USER_PASSWORD="$(openssl rand -base64 16)"
-  echo "Generated secure password for user $NEW_USER: $USER_PASSWORD"
-  read -p "Please confirm that you have copied the password (type 'yes' to continue): " confirm_input
-  while [[ "$confirm_input" != "yes" ]]; do
-    echo "Please type 'yes' after copying the password."
-    read -p "Please confirm that you have copied the password (type 'yes' to continue): " confirm_input
-  done
-  sudo adduser --disabled-password --gecos "" $NEW_USER
-  echo "$NEW_USER:$USER_PASSWORD" | sudo chpasswd
-fi
+NEW_USER_PASSWORD=$(generate_password)
+create_user $NEW_USER $NEW_USER_PASSWORD
 
 # Add User to Sudoers Without Requiring Password
 if [[ ! -f /etc/sudoers.d/$NEW_USER ]]; then
@@ -101,15 +121,9 @@ if ! sudo ufw status | grep -q "Status: active"; then
 fi
 
 # Harden SSH Configuration
-if grep -q "#Port 22" /etc/ssh/sshd_config; then
-  sudo sed -i 's/#Port 22/Port 22/' /etc/ssh/sshd_config
-fi
-if grep -q "#PermitRootLogin yes" /etc/ssh/sshd_config; then
-  sudo sed -i 's/#PermitRootLogin yes/PermitRootLogin no/' /etc/ssh/sshd_config
-fi
-if grep -q "#PasswordAuthentication yes" /etc/ssh/sshd_config; then
-  sudo sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config
-fi
+sudo sed -i 's/#Port 22/Port 22/' /etc/ssh/sshd_config
+sudo sed -i 's/#PermitRootLogin yes/PermitRootLogin no/' /etc/ssh/sshd_config
+sudo sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config
 sudo systemctl reload sshd
 
 # Set Up NGINX Configuration for Multi-Site
@@ -117,11 +131,11 @@ sudo mkdir -p /etc/nginx/sites-available /etc/nginx/sites-enabled
 
 for domain_entry in "${domains[@]}"
 do
-  domain="$(echo $domain_entry | cut -d':' -f1)"
-  domain_type="$(echo $domain_entry | cut -d':' -f2)"
-  db_type="$(echo $domain_entry | cut -d':' -f3)"
-  db_user="$(echo $domain_entry | cut -d':' -f4)"
-  db_password="$(echo $domain_entry | cut -d':' -f5)"
+  domain="$(extract_domain_info $domain_entry 1)"
+  domain_type="$(extract_domain_info $domain_entry 2)"
+  db_type="$(extract_domain_info $domain_entry 3)"
+  db_user="${domain//./_}_user"
+  db_password="$(generate_password)"
   SITE_ROOT="/var/www/$domain/host"
 
   # Create Website Root Directory
@@ -199,96 +213,43 @@ EOF
     sudo ln -s /etc/nginx/sites-available/$domain /etc/nginx/sites-enabled/
   fi
 
-done
+  echo "Database User: $db_user, Password: $db_password" >> $CREDENTIALS_FILE
 
-sudo nginx -t && sudo systemctl reload nginx
-
-# Set Up MySQL for WordPress Sites
-sudo systemctl start mysql
-sudo systemctl enable mysql
-for domain_entry in "${domains[@]}"
-do
-  domain="$(echo $domain_entry | cut -d':' -f1)"
-  domain_type="$(echo $domain_entry | cut -d':' -f2)"
-  db_user="$(echo $domain_entry | cut -d':' -f4)"
-  db_password="$(echo $domain_entry | cut -d':' -f5)"
-  if [[ "$domain_type" == "php" ]]; then
+  # Set Up MySQL for WordPress Sites
+  if [[ "$db_type" == "mysql" ]]; then
     DB_NAME="${domain//./_}_wp_db"
     if ! sudo mysql -u root -e "USE $DB_NAME;" &>/dev/null; then
       sudo mysql -u root -e "CREATE DATABASE $DB_NAME;"
       sudo mysql -u root -e "CREATE USER '$db_user'@'localhost' IDENTIFIED BY '$db_password';"
       sudo mysql -u root -e "GRANT ALL PRIVILEGES ON $DB_NAME.* TO '$db_user'@'localhost';"
       sudo mysql -u root -e "FLUSH PRIVILEGES;"
-    else
-      echo "MySQL database $DB_NAME already exists. Skipping creation."
     fi
   fi
-done
 
-# Set Up PostgreSQL Databases and Users for Django Sites
-sudo systemctl start postgresql
-sudo systemctl enable postgresql
-for domain_entry in "${domains[@]}"
-do
-  domain="$(echo $domain_entry | cut -d':' -f1)"
-  domain_type="$(echo $domain_entry | cut -d':' -f2)"
-  db_user="$(echo $domain_entry | cut -d':' -f4)"
-  db_password="$(echo $domain_entry | cut -d':' -f5)"
-  if [[ "$domain_type" == "python" ]]; then
+  # Set Up PostgreSQL Databases and Users for Django Sites
+  if [[ "$db_type" == "postgres" ]]; then
     DB_NAME="${domain//./_}_pg_db"
     if ! sudo -u postgres psql -c "\l" | grep -q $DB_NAME; then
       sudo -u postgres psql -c "CREATE DATABASE $DB_NAME;"
       sudo -u postgres psql -c "CREATE USER $db_user WITH PASSWORD '$db_password';"
       sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $db_user;"
-    else
-      echo "PostgreSQL database $DB_NAME already exists. Skipping creation."
     fi
   fi
+
 done
 
-# Set Up Gunicorn for Django Sites
-for domain_entry in "${domains[@]}"
-do
-  domain="$(echo $domain_entry | cut -d':' -f1)"
-  domain_type="$(echo $domain_entry | cut -d':' -f2)"
-  if [[ "$domain_type" == "python" ]]; then
-    SITE_ROOT="/var/www/$domain"
-    if [[ ! -d "$SITE_ROOT/venv" ]]; then
-      sudo -u $NEW_USER bash -c "cd $SITE_ROOT && python3 -m venv venv && source venv/bin/activate && pip install -r requirements.txt && deactivate"
-    fi
-    GUNICORN_SERVICE_FILE="/etc/systemd/system/gunicorn_$domain.service"
-    if [[ ! -f $GUNICORN_SERVICE_FILE ]]; then
-      cat <<EOF | sudo tee $GUNICORN_SERVICE_FILE
-[Unit]
-Description=gunicorn daemon for $domain
-After=network.target
-
-[Service]
-User=$NEW_USER
-Group=www-data
-WorkingDirectory=$SITE_ROOT
-ExecStart=$SITE_ROOT/venv/bin/gunicorn --workers 3 --bind 127.0.0.1:8000 projectname.wsgi:application
-
-[Install]
-WantedBy=multi-user.target
-EOF
-      sudo systemctl start gunicorn_$domain
-      sudo systemctl enable gunicorn_$domain
-    else
-      echo "Gunicorn service for $domain already exists. Skipping creation."
-    fi
-  fi
-done
+sudo nginx -t && sudo systemctl reload nginx
 
 # Obtain SSL Certificates for Each Domain Using Let's Encrypt
 for domain_entry in "${domains[@]}"
 do
-  domain="$(echo $domain_entry | cut -d':' -f1)"
+  domain="$(extract_domain_info $domain_entry 1)"
   if ! sudo certbot certificates | grep -q $domain; then
     sudo certbot --nginx -d $domain --non-interactive --agree-tos -m $SSL_EMAIL
   else
     echo "SSL certificate for $domain already exists. Skipping."
   fi
+  echo "SSL Certificate for $domain obtained" >> $CREDENTIALS_FILE
 done
 
 # Set Up Certbot Auto Renewal
@@ -297,4 +258,5 @@ sudo systemctl enable certbot.timer
 # Set Up Automatic Backups
 if [[ "$ENABLE_BACKUPS" == "true" ]]; then
   sudo mkdir -p $BACKUP_DIR
- 
+  echo "Backups are enabled. Directory: $BACKUP_DIR" >> $CREDENTIALS_FILE
+fi
