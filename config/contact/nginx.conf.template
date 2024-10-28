@@ -1,0 +1,38 @@
+# /config/contact/nginx.conf.template
+# Contact form configuration block
+location /contact {
+    alias /var/www/${domain}/contact;
+    
+    # Security headers
+    add_header X-Frame-Options "DENY";
+    add_header X-XSS-Protection "1; mode=block";
+    add_header X-Content-Type-Options "nosniff";
+    add_header Referrer-Policy "strict-origin-when-cross-origin";
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';";
+
+    # Rate limiting
+    limit_req zone=contactform burst=5 nodelay;
+    limit_req_status 429;
+
+    location ~ \.php$ {
+        fastcgi_split_path_info ^(.+\.php)(/.+)$;
+        fastcgi_pass unix:/run/php-fpm/${domain}-contact.sock;
+        fastcgi_index index.php;
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $request_filename;
+        fastcgi_param PATH_INFO $fastcgi_path_info;
+        
+        # Timeouts
+        fastcgi_connect_timeout 30s;
+        fastcgi_send_timeout 30s;
+        fastcgi_read_timeout 30s;
+    }
+    
+    # Deny access to sensitive files
+    location ~ /\. {
+        deny all;
+    }
+}
+
+# Add to http block in nginx.conf
+limit_req_zone $binary_remote_addr zone=contactform:10m rate=1r/s;

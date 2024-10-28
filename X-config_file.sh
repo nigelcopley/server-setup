@@ -1,17 +1,17 @@
 #!/bin/bash
 
 # Define user information
-NEW_USER="${NEW_USER:-default_user}"
+NEW_USER="${NEW_USER:-multiops}"
 USER_PASSWORD="${USER_PASSWORD:-$(openssl rand -base64 16)}"
 
 # Set the hostname for the server
-HOSTNAME="${HOSTNAME:-default-hostname}"
+HOSTNAME="${HOSTNAME:-multisite-server}"
 
 # Enable Redis installation (0/1)
 INSTALL_REDIS=${INSTALL_REDIS:-0}
 
 # Email for SSL certificates and notifications
-SSL_EMAIL="${SSL_EMAIL:-your-email@example.com}"
+SSL_EMAIL="${SSL_EMAIL:-npcopley@gmail.com}"
 if [[ -z "$SSL_EMAIL" ]]; then
   echo "Error: SSL email is not set. Please configure SSL_EMAIL before proceeding."
   exit 1
@@ -42,9 +42,10 @@ DO_SPACES_REGION="${DO_SPACES_REGION:-nyc3}" # Example: nyc3, ams3, sgp1, etc.
 # Define domains with their respective types (php, python, html) and optional features
 # Format: domain:type:db (db can be 'postgres', 'mysql', or 'none')
 domains=(
-  "example1.com:html:none"
-  "example2.com:python:postgres"
-  "example3.com:php:mysql"
+  "nigelcopley.com:html:none"
+  "lanza.digital:python:postgres"
+  "lanzarotebbq.com.com:python:postgres"
+  "ic.ventures.com.com:python:postgres"
 )
 
 # Validation for DigitalOcean Spaces

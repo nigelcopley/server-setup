@@ -1,0 +1,37 @@
+# config/python/gunicorn-template.service
+[Unit]
+Description=Gunicorn daemon for ${domain}
+After=network.target
+
+[Service]
+User=${site_user}
+Group=${site_user}
+WorkingDirectory=/var/www/${domain}/host
+Environment="PATH=/var/www/${domain}/venv/bin"
+Environment="PYTHONPATH=/var/www/${domain}/host"
+Environment="DJANGO_SETTINGS_MODULE=config.settings.production"
+
+ExecStart=/var/www/${domain}/venv/bin/gunicorn \
+    --name=${domain} \
+    --workers=${workers:-3} \
+    --max-requests=${max_requests:-1000} \
+    --max-requests-jitter=100 \
+    --log-level=info \
+    --bind=unix:/run/gunicorn/${domain}.sock \
+    --error-logfile=/var/www/${domain}/logs/gunicorn-error.log \
+    --access-logfile=/var/www/${domain}/logs/gunicorn-access.log \
+    --capture-output \
+    --enable-stdio-inheritance \
+    config.wsgi:application
+
+# Restart on failures
+Restart=always
+RestartSec=5
+StartLimitInterval=0
+
+# Security
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

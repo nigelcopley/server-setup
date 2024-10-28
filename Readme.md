@@ -1,114 +1,220 @@
 # Multi-Site Server Setup
 
-This project is a comprehensive Bash script to set up a multi-site hosting server on an Ubuntu machine. It can install and configure NGINX, PostgreSQL, MySQL, PHP, Gunicorn, and SSL using Let's Encrypt for multiple domains, with support for different software stacks like WordPress (PHP) and Django (Python).
+An automated, secure, and modular server setup solution for hosting multiple websites with different technology stacks (PHP, Python, HTML) on a single Ubuntu server. Features built-in contact forms for HTML sites, comprehensive backup solutions, and robust security features.
 
-## Prerequisites
+## 🚀 Features
 
-- Ensure you run this script as the root user or with sudo privileges.
-- The configuration file (`config_file.sh`) should be properly set up before running the script.
-- Update the domains list and user information according to your requirements.
+### Multi-Technology Support
+- **HTML Sites**: Static websites with secure contact form integration
+- **PHP Sites**: Full PHP-FPM configuration with per-site pools
+- **Python Sites**: Python applications with Gunicorn and virtualenv
 
-## Configuration
+### Security Features
+- 🔒 Isolated site environments with dedicated users
+- 🛡️ Fail2Ban integration for intrusion prevention
+- 🔐 SSL/TLS automation with Let's Encrypt
+- 🚫 Rate limiting and DDoS protection
+- 🕵️ Malware scanning with ClamAV
 
-The configuration settings are provided through a configuration file (`config_file.sh`). Below is a summary of some key settings:
+### Backup System
+- 📂 Multiple storage backends (Local, S3, DO Spaces)
+- 🔄 Automated backup rotation
+- 🔒 Optional GPG encryption
+- 📧 Email notifications
+- 💾 Database backup support
+- 🗜️ Compression and optimization
 
-- **User Information**: Define `NEW_USER` and `USER_PASSWORD` for the server user.
-- **Hostname**: Set `HOSTNAME` to the desired server name.
-- **Optional Tools**: Use variables like `INSTALL_REDIS`, `INSTALL_FAIL2BAN`, `INSTALL_CLAMAV` to enable or disable optional installations.
-- **Automatic Backups**: Set `ENABLE_BACKUPS` and `BACKUP_DIR` to configure automatic backups.
-- **DigitalOcean Spaces Configuration**: To enable backup storage, configure `USE_DO_SPACES`, `DO_SPACES_ACCESS_KEY`, `DO_SPACES_SECRET_KEY`, and other settings.
-- **Domains List**: Define the list of domains with their types and database configurations.
+### Contact Form System
+- ✉️ Secure PHP-based contact form for HTML sites
+- 🔑 CSRF protection
+- 🤖 Anti-spam measures
+- 📝 Form validation and sanitization
+- 📨 Email notifications
 
-### Configuration File Example (`config_file.sh`)
+## 📋 Requirements
 
-The script requires a configuration file that contains information like user credentials, domains, and services to install. An example configuration is:
+- Ubuntu 20.04 LTS or newer
+- Root access or sudo privileges
+- Domain names pointed to your server
+- Minimum 1GB RAM (2GB+ recommended)
+- 20GB+ disk space
 
-```sh
-#!/bin/bash
+## 🚀 Quick Start
 
-# Define user information
-NEW_USER="default_user"
-USER_PASSWORD="$(openssl rand -base64 16)"
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/multisite-server-setup.git
+cd multisite-server-setup
+```
 
-# Set the hostname for the server
-HOSTNAME="default-hostname"
+2. Configure your domains in `config.sh`:
+```bash
+vim config.sh
+```
 
-# Enable Redis installation (0/1)
-INSTALL_REDIS=1
-
-# Email for SSL certificates and notifications
-SSL_EMAIL="your-email@example.com"
-
-# Enable Fail2Ban installation for additional security (0/1)
-INSTALL_FAIL2BAN=1
-
-# Enable ClamAV for malware scanning (0/1)
-INSTALL_CLAMAV=1
-
-# Enable automatic backups (0/1)
-ENABLE_BACKUPS=1
-
-# Backup destination directory
-BACKUP_DIR="/backups/$(date +%Y%m%d)"
-
-# Enable email notifications for backup success/failures (0/1)
-ENABLE_EMAIL_NOTIFICATIONS=1
-
-# DigitalOcean Spaces configuration
-USE_DO_SPACES=0
-DO_SPACES_ACCESS_KEY=""
-DO_SPACES_SECRET_KEY=""
-DO_SPACES_BUCKET_NAME="your_space_name"
-DO_SPACES_REGION="nyc3"
-
-# Define domains with their respective types and databases
-# Format: domain:type:db
+Example configuration:
+```bash
 domains=(
-  "example1.com:html:none"
-  "example2.com:python:postgres"
-  "example3.com:php:mysql"
+    "example1.com:html:none:{contact_email:admin@example1.com}"
+    "example2.com:python:postgres:{workers:3}"
+    "example3.com:php:mysql:{php_version:8.2}"
 )
 ```
 
-## Running the Script
-
-Once the configuration is ready, run the script as follows:
-
-```sh
+3. Run the setup:
+```bash
+chmod +x setup.sh
 sudo ./setup.sh
 ```
 
-The script will perform the following tasks:
+## 📝 Configuration
 
-1. **Update and Upgrade the System**: Runs system updates.
-2. **Set Hostname**: Configures the server hostname.
-3. **Install Required Packages**: Installs NGINX, MySQL, PostgreSQL, PHP, Python, Certbot, and other tools.
-4. **Create User**: Adds a new user to the system with sudo privileges.
-5. **Set Up Security**: Installs and configures security tools like Fail2Ban, ClamAV, and configures UFW.
-6. **Configure NGINX**: Sets up NGINX server blocks for each domain based on its type (HTML, PHP, Python).
-7. **Database Setup**: Configures MySQL or PostgreSQL databases for applicable domains.
-8. **SSL Setup**: Obtains SSL certificates for each domain using Let's Encrypt.
-9. **Automatic Backups**: Sets up backups if enabled.
+### Domain Configuration Format
+```bash
+"domain:type:db:{key:value,key:value}"
+```
 
-## Features
+- **domain**: Your domain name
+- **type**: Site type (html, php, python)
+- **db**: Database type (none, mysql, postgres)
+- **key:value**: Additional configurations
 
-- **Multi-Domain Support**: Configure multiple domains with different stacks (HTML, PHP, Python).
-- **Security Configurations**: Fail2Ban, ClamAV, and UFW setup for enhanced server security.
-- **Automated SSL Setup**: Integration with Let's Encrypt for SSL certificates.
-- **Automatic Backups**: Configurable backup system with optional integration with DigitalOcean Spaces.
+### Site-Specific Configurations
 
-## Troubleshooting
+#### HTML Sites
+```bash
+"example.com:html:none:{
+    contact_email:admin@example.com,
+    memory_limit:128M,
+    enable_contact_form:1,
+    backup_retention:30
+}"
+```
 
-- **Configuration File Missing**: Ensure the `config_file.sh` file is present and correctly filled out before running the script.
-- **DigitalOcean Spaces Setup**: Make sure `DO_SPACES_ACCESS_KEY` and `DO_SPACES_SECRET_KEY` are set if DigitalOcean Spaces is enabled.
-- **Permissions**: Ensure that the script is executed with appropriate permissions (`sudo`).
+#### PHP Sites
+```bash
+"example.com:php:mysql:{
+    php_version:8.2,
+    memory_limit:256M,
+    max_children:5,
+    pm_type:dynamic,
+    backup_enabled:1
+}"
+```
 
-## Recommendations
+#### Python Sites
+```bash
+"example.com:python:postgres:{
+    workers:3,
+    max_requests:1000,
+    memory_limit:256M,
+    python_version:3.9,
+    backup_type:s3
+}"
+```
 
-- **Security**: Use a strong password for `USER_PASSWORD` and keep all credentials secure.
-- **Modularity**: Split configuration into multiple smaller files (e.g., `db_config.sh`, `security_config.sh`) to increase modularity.
-- **Testing**: Test the script in a controlled environment before deploying to production.
+## 💾 Backup System
 
-## License
+### Storage Options
 
-This script is open-source and available for modification under the MIT License.
+#### Local Storage
+```json
+{
+    "storage": {
+        "local": {
+            "enabled": true,
+            "path": "/backups/example.com",
+            "retention_days": 7
+        }
+    }
+}
+```
+
+#### Amazon S3
+```json
+{
+    "storage": {
+        "s3": {
+            "enabled": true,
+            "bucket": "my-backups",
+            "region": "us-east-1",
+            "path": "backups/example.com",
+            "access_key": "YOUR_ACCESS_KEY",
+            "secret_key": "YOUR_SECRET_KEY",
+            "retention_days": 30
+        }
+    }
+}
+```
+
+#### DigitalOcean Spaces
+```json
+{
+    "storage": {
+        "spaces": {
+            "enabled": true,
+            "bucket": "my-backups",
+            "region": "nyc3",
+            "path": "backups/example.com",
+            "access_key": "YOUR_SPACES_KEY",
+            "secret_key": "YOUR_SPACES_SECRET",
+            "endpoint": "nyc3.digitaloceanspaces.com",
+            "retention_days": 30
+        }
+    }
+}
+```
+
+### Backup Features
+- 🔄 Automatic daily backups
+- 🔒 Optional GPG encryption
+- 📧 Email notifications on success/failure
+- 📊 Backup size optimization
+- 🗄️ Database backup support
+- ⏰ Configurable retention periods
+- 📝 Detailed logging
+
+### Backup Commands
+
+```bash
+# Manual backup
+sudo /usr/local/bin/backup-example.com.sh example.com
+
+# View backup logs
+sudo tail -f /var/www/example.com/logs/backup.log
+
+# List backups
+sudo ls -la /backups/example.com/
+
+# Restore from backup
+sudo /usr/local/bin/restore-example.com.sh example.com backup-file.tar.gz
+```
+
+## 📂 Directory Structure
+
+```
+/var/www/${domain}/
+├── host/               # Web root
+│   ├── public/         # Public files
+│   └── contact/        # Contact form (HTML sites)
+├── config/             # Site configuration
+│   ├── backup.json     # Backup configuration
+│   ├── contact.json    # Contact form configuration
+│   └── nginx.conf      # Site-specific NGINX config
+├── logs/               # Log files
+├── sessions/           # PHP sessions
+├── tmp/                # Temporary files
+└── backup/             # Local backups
+```
+
+## 🔒 Security Features
+
+### Per-Site Isolation
+- Separate system users
+- Isolated PHP-FPM pools
+- Restricted file permissions
+- Separate log files
+
+### Contact Form Security
+- CSRF protection
+- Rate limiti

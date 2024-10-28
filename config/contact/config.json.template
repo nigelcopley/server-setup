@@ -1,0 +1,20 @@
+# /config/contact/config.json.template
+{
+    "recipient_email": "webmaster@${domain}",
+    "from_email": "noreply@${domain}",
+    "subject_prefix": "[Contact Form]",
+    "max_message_length": 5000,
+    "max_requests_per_hour": 5,
+    "allowed_origins": [
+        "https://${domain}"
+    ],
+    "security": {
+        "enable_rate_limiting": true,
+        "enable_csrf": true,
+        "enable_honeypot": true
+    },
+    "logging": {
+        "enabled": true,
+        "max_log_age": 30
+    }
+}

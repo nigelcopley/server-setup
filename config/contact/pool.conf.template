@@ -1,0 +1,37 @@
+# /config/contact/pool.conf.template
+[${domain}-contact]
+user = ${site_user}
+group = ${site_user}
+
+listen = /run/php-fpm/${domain}-contact.sock
+listen.owner = www-data
+listen.group = www-data
+listen.mode = 0660
+
+pm = dynamic
+pm.max_children = 3
+pm.start_servers = 1
+pm.min_spare_servers = 1
+pm.max_spare_servers = 2
+pm.max_requests = 500
+
+php_admin_value[memory_limit] = 32M
+php_admin_value[upload_max_filesize] = 1M
+php_admin_value[post_max_size] = 1M
+php_admin_value[error_log] = /var/www/${domain}/logs/contact_php_errors.log
+php_admin_flag[log_errors] = on
+php_admin_value[open_basedir] = /var/www/${domain}/:/tmp/
+php_admin_value[session.save_path] = /var/www/${domain}/sessions/
+php_admin_value[sys_temp_dir] = /var/www/${domain}/tmp/
+
+php_admin_flag[allow_url_fopen] = off
+php_admin_flag[allow_url_include] = off
+php_admin_flag[display_errors] = off
+php_admin_flag[expose_php] = off
+php_admin_value[max_execution_time] = 30
+php_admin_value[max_input_time] = 30
+php_admin_value[session.cookie_httponly] = 1
+php_admin_value[session.cookie_samesite] = "Strict"
+php_admin_value[session.cookie_secure] = 1
+
+security.limit_extensions = .php
