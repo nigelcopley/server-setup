@@ -1,0 +1,47 @@
+# config/backup/backup.json.template
+{
+    "enabled": true,
+    "retention_days": 7,
+    "compression": "gzip",
+    "encryption": {
+        "enabled": false,
+        "gpg_recipient": ""
+    },
+    "schedule": {
+        "frequency": "daily",
+        "time": "02:00"
+    },
+    "notifications": {
+        "enabled": true,
+        "email": "${ADMIN_EMAIL}",
+        "on_success": false,
+        "on_failure": true
+    },
+    "storage": {
+        "local": {
+            "enabled": true,
+            "path": "/backups/${domain}",
+            "retention_days": 7
+        },
+        "s3": {
+            "enabled": false,
+            "bucket": "",
+            "region": "",
+            "path": "backups/${domain}",
+            "access_key": "",
+            "secret_key": "",
+            "endpoint": "",
+            "retention_days": 30
+        },
+        "spaces": {
+            "enabled": false,
+            "bucket": "",
+            "region": "",
+            "path": "backups/${domain}",
+            "access_key": "",
+            "secret_key": "",
+            "endpoint": "",
+            "retention_days": 30
+        }
+    }
+}

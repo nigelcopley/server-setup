@@ -1,0 +1,50 @@
+# .gitignore
+# Backup directories
+/backups/
+*/backup/
+
+# Log files
+*.log
+*/logs/
+
+# Configuration files with sensitive data
+config.sh
+*/config/*.json
+!*/config/*.json.template
+
+# Temporary files
+*/tmp/
+*.tmp
+*.temp
+
+# PHP session files
+*/sessions/
+
+# Python virtual environments
+*/venv/
+*.pyc
+__pycache__/
+
+# SSL certificates
+*.pem
+*.key
+*.crt
+
+# Environment files
+.env
+*.env
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

@@ -1,0 +1,68 @@
+# config/monitoring/monitor.conf.template
+{
+    "site": "${domain}",
+    "check_interval": 60,
+    "notifications": {
+        "email": "${ADMIN_EMAIL}",
+        "enabled": true,
+        "threshold": {
+            "cpu": 90,
+            "memory": 90,
+            "disk": 90
+        }
+    },
+    "services": [
+        {
+            "name": "nginx",
+            "type": "process",
+            "critical": true
+        },
+        {
+            "name": "php-fpm",
+            "type": "process",
+            "critical": true
+        },
+        {
+            "name": "mysql",
+            "type": "process",
+            "critical": false
+        },
+        {
+            "name": "ssl-cert",
+            "type": "certificate",
+            "warning_days": 30
+        }
+    ],
+    "resources": {
+        "cpu": {
+            "enabled": true,
+            "warning": 80,
+            "critical": 90
+        },
+        "memory": {
+            "enabled": true,
+            "warning": 80,
+            "critical": 90
+        },
+        "disk": {
+            "enabled": true,
+            "warning": 80,
+            "critical": 90,
+            "paths": [
+                "/var/www/${domain}",
+                "/backups/${domain}"
+            ]
+        }
+    },
+    "logs": {
+        "paths": [
+            "/var/www/${domain}/logs/error.log",
+            "/var/www/${domain}/logs/access.log",
+            "/var/www/${domain}/logs/php_errors.log"
+        ],
+        "patterns": {
+            "error": "error|exception|fatal",
+            "warning": "warning|notice"
+        }
+    }
+}

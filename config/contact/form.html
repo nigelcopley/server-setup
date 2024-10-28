@@ -1,0 +1,296 @@
+<!--  /config/contact/form.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Us</title>
+    <style>
+        .contact-form {
+            max-width: 600px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            border-color: #007bff;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+        }
+
+        .form-group textarea {
+            min-height: 150px;
+            resize: vertical;
+        }
+
+        .honeypot {
+            display: none;
+        }
+
+        .submit-button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 4px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .submit-button:hover {
+            background-color: #0056b3;
+        }
+
+        .submit-button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .message {
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+            display: none;
+        }
+
+        .error-message {
+            background-color: #ffebee;
+            color: #c62828;
+            border: 1px solid #ffcdd2;
+        }
+
+        .success-message {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #c8e6c9;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 1rem;
+        }
+
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 1rem;
+            height: 1rem;
+            border: 2px solid #007bff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s linear infinite;
+            margin-left: 0.5rem;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .field-error {
+            color: #c62828;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="contact-form">
+        <h2>Contact Us</h2>
+        <form id="contactForm" novalidate>
+            <div class="form-group">
+                <label for="name">Name:</label>
+                <input type="text" id="name" name="name" required 
+                       minlength="2" maxlength="100"
+                       autocomplete="name">
+                <div id="nameError" class="field-error"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email" required
+                       maxlength="254" 
+                       autocomplete="email">
+                <div id="emailError" class="field-error"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="message">Message:</label>
+                <textarea id="message" name="message" required
+                          minlength="10" maxlength="5000"></textarea>
+                <div id="messageError" class="field-error"></div>
+            </div>
+
+            <!-- Honeypot field -->
+            <div class="honeypot">
+                <input type="text" name="website" autocomplete="off">
+            </div>
+
+            <input type="hidden" name="csrf_token" id="csrf_token">
+            
+            <button type="submit" class="submit-button">Send Message</button>
+        </form>
+
+        <div id="loading" class="loading">Sending message...</div>
+        <div id="errorMessage" class="message error-message"></div>
+        <div id="successMessage" class="message success-message">
+            Thank you! Your message has been sent successfully.
+        </div>
+    </div>
+
+    <script>
+        class ContactForm {
+            constructor(formId) {
+                this.form = document.getElementById(formId);
+                this.submitButton = this.form.querySelector('button[type="submit"]');
+                this.loading = document.getElementById('loading');
+                this.errorMessage = document.getElementById('errorMessage');
+                this.successMessage = document.getElementById('successMessage');
+                
+                this.setupListeners();
+                this.getCsrfToken();
+            }
+
+            setupListeners() {
+                this.form.addEventListener('submit', (e) => this.handleSubmit(e));
+                
+                // Real-time validation
+                this.form.querySelectorAll('input, textarea').forEach(field => {
+                    field.addEventListener('blur', () => this.validateField(field));
+                    field.addEventListener('input', () => this.validateField(field));
+                });
+            }
+
+            async getCsrfToken() {
+                try {
+                    const response = await fetch('/contact/');
+                    const data = await response.json();
+                    document.getElementById('csrf_token').value = data.csrf_token;
+                } catch (error) {
+                    console.error('Error fetching CSRF token:', error);
+                }
+            }
+
+            validateField(field) {
+                const errorDiv = document.getElementById(`${field.id}Error`);
+                let errorMessage = '';
+
+                if (field.validity.valueMissing) {
+                    errorMessage = 'This field is required';
+                } else if (field.validity.typeMismatch && field.type === 'email') {
+                    errorMessage = 'Please enter a valid email address';
+                } else if (field.validity.tooShort) {
+                    errorMessage = `Please enter at least ${field.minLength} characters`;
+                } else if (field.validity.tooLong) {
+                    errorMessage = `Please enter no more than ${field.maxLength} characters`;
+                }
+
+                errorDiv.textContent = errorMessage;
+                errorDiv.style.display = errorMessage ? 'block' : 'none';
+                
+                return !errorMessage;
+            }
+
+            validateForm() {
+                let isValid = true;
+                this.form.querySelectorAll('input, textarea').forEach(field => {
+                    if (!this.validateField(field)) {
+                        isValid = false;
+                    }
+                });
+                return isValid;
+            }
+
+            showLoading(show) {
+                this.loading.style.display = show ? 'block' : 'none';
+                this.submitButton.disabled = show;
+            }
+
+            showMessage(element, show) {
+                element.style.display = show ? 'block' : 'none';
+            }
+
+            resetForm() {
+                this.form.reset();
+                this.form.querySelectorAll('.field-error').forEach(error => {
+                    error.style.display = 'none';
+                });
+            }
+
+            async handleSubmit(event) {
+                event.preventDefault();
+                
+                // Hide any existing messages
+                this.showMessage(this.errorMessage, false);
+                this.showMessage(this.successMessage, false);
+
+                // Validate form
+                if (!this.validateForm()) {
+                    return;
+                }
+
+                this.showLoading(true);
+
+                try {
+                    const formData = new FormData(this.form);
+                    const response = await fetch('/contact/', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+
+                    if (result.error) {
+                        this.errorMessage.textContent = result.error;
+                        this.showMessage(this.errorMessage, true);
+                    } else {
+                        this.resetForm();
+                        this.showMessage(this.successMessage, true);
+                        await this.getCsrfToken(); // Get new token after successful submission
+                    }
+                } catch (error) {
+                    this.errorMessage.textContent = 'An error occurred. Please try again later.';
+                    this.showMessage(this.errorMessage, true);
+                } finally {
+                    this.showLoading(false);
+                }
+            }
+        }
+
+        // Initialize the form when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new ContactForm('contactForm');
+        });
+    </script>
+</body>
+</html>

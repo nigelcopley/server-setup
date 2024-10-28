@@ -1,0 +1,390 @@
+<!-- # templates/site-structures/html/default-pages/maintenance.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <meta http-equiv="refresh" content="300"> <!-- Auto refresh every 5 minutes -->
+    <title>Scheduled Maintenance</title>
+    <style>
+        :root {
+            --primary: #2196f3;
+            --secondary: #ff9800;
+            --success: #4caf50;
+            --text: #333;
+            --text-light: #666;
+            --bg: #f5f5f5;
+            --card-bg: #ffffff;
+            --border: #e0e0e0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+            line-height: 1.6;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        
+        .maintenance-container {
+            background: var(--card-bg);
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 2rem;
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .maintenance-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 1.5rem;
+        }
+
+        .progress-container {
+            margin: 2rem 0;
+            background: var(--bg);
+            border-radius: 10px;
+            padding: 1rem;
+        }
+
+        .progress-bar {
+            background: var(--bg);
+            height: 10px;
+            border-radius: 5px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--primary);
+            width: 0%;
+            transition: width 1s ease;
+            border-radius: 5px;
+        }
+
+        .status-message {
+            color: var(--text-light);
+            margin: 1rem 0;
+            font-size: 0.9rem;
+        }
+
+        .time-container {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .time-block {
+            background: var(--bg);
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            min-width: 80px;
+        }
+
+        .time-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .time-label {
+            font-size: 0.8rem;
+            color: var(--text-light);
+            text-transform: uppercase;
+        }
+
+        .updates {
+            margin: 2rem 0;
+            text-align: left;
+            max-height: 150px;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 1rem;
+        }
+
+        .update-item {
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .update-item:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+
+        .update-time {
+            font-size: 0.8rem;
+            color: var(--text-light);
+        }
+
+        .contact-info {
+            margin-top: 2rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .social-links {
+            margin-top: 1rem;
+        }
+
+        .social-links a {
+            color: var(--text-light);
+            text-decoration: none;
+            margin: 0 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .social-links a:hover {
+            color: var(--primary);
+        }
+
+        .notification-form {
+            margin-top: 1.5rem;
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+        }
+
+        .notification-form input {
+            padding: 0.5rem;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            width: 200px;
+        }
+
+        .notification-form button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .notification-form button:hover {
+            background: #1976d2;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .spinner {
+            border: 3px solid var(--bg);
+            border-top: 3px solid var(--primary);
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+            display: none;
+        }
+
+        .maintenance-complete {
+            display: none;
+        }
+
+        @media (max-width: 480px) {
+            .time-container {
+                flex-wrap: wrap;
+            }
+            
+            .time-block {
+                min-width: 60px;
+            }
+            
+            .notification-form {
+                flex-direction: column;
+            }
+            
+            .notification-form input,
+            .notification-form button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="maintenance-container">
+        <!-- Maintenance Icon -->
+        <svg class="maintenance-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12" y2="16"/>
+        </svg>
+
+        <h1>Scheduled Maintenance</h1>
+        
+        <div class="status-message">
+            We're currently performing scheduled maintenance to improve our services.
+        </div>
+
+        <!-- Progress Indicator -->
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressBar"></div>
+            </div>
+            <div class="status-message" id="progressStatus">
+                Maintenance in progress...
+            </div>
+        </div>
+
+        <!-- Countdown Timer -->
+        <div class="time-container">
+            <div class="time-block">
+                <div class="time-value" id="hours">00</div>
+                <div class="time-label">Hours</div>
+            </div>
+            <div class="time-block">
+                <div class="time-value" id="minutes">00</div>
+                <div class="time-label">Minutes</div>
+            </div>
+            <div class="time-block">
+                <div class="time-value" id="seconds">00</div>
+                <div class="time-label">Seconds</div>
+            </div>
+        </div>
+
+        <!-- Status Updates -->
+        <div class="updates" id="updates">
+            <!-- Updates will be added here dynamically -->
+        </div>
+
+        <!-- Email Notification Form -->
+        <div class="notification-form">
+            <input type="email" id="notifyEmail" placeholder="Enter email for updates">
+            <button onclick="subscribeToUpdates()">Notify Me</button>
+        </div>
+
+        <!-- Maintenance Complete Message -->
+        <div class="maintenance-complete" id="maintenanceComplete">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+            <h2>Maintenance Complete!</h2>
+            <p>The site will reload automatically...</p>
+        </div>
+
+        <!-- Contact Information -->
+        <div class="contact-info">
+            <p>Need assistance? Contact us:</p>
+            <p><a href="mailto:support@example.com">support@example.com</a></p>
+            <div class="social-links">
+                <a href="#" target="_blank">Twitter</a>
+                <a href="#" target="_blank">Status Page</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const config = {
+            startTime: new Date().getTime(),
+            duration: 2 * 60 * 60 * 1000, // 2 hours
+            updates: [
+                { time: 0, message: "Maintenance started" },
+                { time: 25, message: "Database backup in progress" },
+                { time: 50, message: "Updating system components" },
+                { time: 75, message: "Running final checks" },
+                { time: 100, message: "Maintenance completed" }
+            ]
+        };
+
+        // Initialize
+        let progress = 0;
+        const endTime = config.startTime + config.duration;
+        
+        // Update progress and countdown
+        function updateStatus() {
+            const now = new Date().getTime();
+            const timeLeft = endTime - now;
+            const progressPercent = Math.min(100, ((now - config.startTime) / config.duration) * 100);
+            
+            // Update progress bar
+            progress = progressPercent;
+            document.getElementById('progressBar').style.width = `${progress}%`;
+            
+            // Update countdown
+            if (timeLeft > 0) {
+                const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+                const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+                
+                document.getElementById('hours').textContent = hours.toString().padStart(2, '0');
+                document.getElementById('minutes').textContent = minutes.toString().padStart(2, '0');
+                document.getElementById('seconds').textContent = seconds.toString().padStart(2, '0');
+                
+                // Update status message based on progress
+                updateProgressMessage(progress);
+            } else {
+                maintenanceComplete();
+            }
+        }
+
+        // Update status message and add updates
+        function updateProgressMessage(progress) {
+            const updates = document.getElementById('updates');
+            
+            config.updates.forEach(update => {
+                if (progress >= update.time && !document.getElementById(`update-${update.time}`)) {
+                    const updateElement = document.createElement('div');
+                    updateElement.id = `update-${update.time}`;
+                    updateElement.className = 'update-item';
+                    updateElement.innerHTML = `
+                        <div class="update-time">${new Date().toLocaleTimeString()}</div>
+                        <div>${update.message}</div>
+                    `;
+                    updates.insertBefore(updateElement, updates.firstChild);
+                }
+            });
+        }
+
+        // Handle maintenance completion
+        function maintenanceComplete() {
+            document.getElementById('maintenanceComplete').style.display = 'block';
+            setTimeout(() => {
+                window.location.reload();
+            }, 5000);
+        }
+
+        // Handle email notifications
+        function subscribeToUpdates() {
+            const email = document.getElementById('notifyEmail').value;
+            if (email && /\S+@\S+\.\S+/.test(email)) {
+                // Here you would typically send this to your server
+                alert('You will be notified when maintenance is complete.');
+                document.getElementById('notifyEmail').value = '';
+            } else {
+                alert('Please enter a valid email address.');
+            }
+        }
+
+        // Start updates
+        updateStatus();
+        setInterval(updateStatus, 1000);
+
+        // Add initial update
+        updateProgressMessage(0);
+    </script>
+</body>
+</html>
