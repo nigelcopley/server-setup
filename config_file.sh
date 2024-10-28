@@ -2,7 +2,7 @@
 
 # Define user information
 NEW_USER="your_user"
-USER_PASSWORD="your_password"
+USER_PASSWORD="$(openssl rand -base64 16)"
 
 # Set the hostname for the server
 HOSTNAME="your-hostname"

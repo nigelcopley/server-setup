@@ -58,6 +58,13 @@ fi
 if id "$NEW_USER" &>/dev/null; then
   echo "User $NEW_USER already exists. Skipping user creation."
 else
+  USER_PASSWORD="$(openssl rand -base64 16)"
+  echo "Generated secure password for user $NEW_USER: $USER_PASSWORD"
+  read -p "Please confirm that you have copied the password (type 'yes' to continue): " confirm_input
+  while [[ "$confirm_input" != "yes" ]]; do
+    echo "Please type 'yes' after copying the password."
+    read -p "Please confirm that you have copied the password (type 'yes' to continue): " confirm_input
+  done
   sudo adduser --disabled-password --gecos "" $NEW_USER
   echo "$NEW_USER:$USER_PASSWORD" | sudo chpasswd
 fi
