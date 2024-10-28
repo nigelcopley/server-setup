@@ -142,4 +142,4 @@ Contributions are welcome! Feel free to submit a pull request or open an issue t
 
 ## Contact
 
-If you have any questions or issues, feel free to contact us at `your-email@example.com`.
+If you have any questions or issues, feel free to contact me
